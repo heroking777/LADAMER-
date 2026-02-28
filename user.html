@@ -644,9 +644,21 @@
     .products-grid { grid-template-columns: 1fr 1fr; }
     .video-grid { grid-template-columns: 1fr; }
     .form-row { grid-template-columns: 1fr; }
-    header { padding: 0 20px; }
-    nav { padding: 0 20px; overflow-x: auto; }
-    main { padding: 24px 16px; }
+    header { padding: 0 12px; height: auto; min-height: 56px; flex-wrap: wrap; gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+    header h1 { font-size: 18px; letter-spacing: 4px; }
+    .header-right { gap: 8px; flex-wrap: wrap; }
+    .header-right span { display: none; }
+    .cart-btn { padding: 6px 12px; font-size: 11px; }
+    .logout-btn { padding: 6px 10px; font-size: 10px; }
+    nav { padding: 0 12px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+    nav a { padding: 12px 14px; font-size: 11px; }
+    main { padding: 20px 12px; }
+    .hero { padding: 40px 20px; }
+    .hero h2 { font-size: 26px; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .chat-widget { bottom: 16px; right: 16px; }
+    .chat-box { width: 290px; }
+    .products-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
