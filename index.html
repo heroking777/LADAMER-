@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LADAMER 卸プラットフォーム</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+    background: #0a0a0a;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-wrap {
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+  }
+  .brand {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .brand h1 {
+    font-size: 32px;
+    letter-spacing: 8px;
+    color: #c9a84c;
+    font-weight: 300;
+  }
+  .brand p {
+    color: #888;
+    font-size: 11px;
+    letter-spacing: 3px;
+    margin-top: 6px;
+  }
+  .card {
+    background: #111;
+    border: 1px solid #2a2a2a;
+    border-radius: 2px;
+    padding: 40px;
+  }
+  .card h2 {
+    color: #fff;
+    font-size: 14px;
+    letter-spacing: 4px;
+    font-weight: 300;
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .form-group {
+    margin-bottom: 20px;
+  }
+  .form-group label {
+    display: block;
+    color: #c9a84c;
+    font-size: 11px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .form-group input {
+    width: 100%;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 2px;
+    padding: 14px 16px;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .form-group input:focus {
+    border-color: #c9a84c;
+  }
+  .btn-login {
+    width: 100%;
+    background: linear-gradient(135deg, #c9a84c, #e8cc80);
+    border: none;
+    border-radius: 2px;
+    padding: 16px;
+    color: #000;
+    font-size: 13px;
+    letter-spacing: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: opacity 0.3s;
+  }
+  .btn-login:hover { opacity: 0.85; }
+  .hint {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid #222;
+    display: flex;
+    gap: 12px;
+  }
+  .hint-box {
+    flex: 1;
+    background: #1a1a1a;
+    border-radius: 2px;
+    padding: 12px;
+    text-align: center;
+  }
+  .hint-box .label {
+    font-size: 9px;
+    color: #c9a84c;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .hint-box .val {
+    font-size: 11px;
+    color: #888;
+  }
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="brand">
+    <h1>LADAMER</h1>
+    <p>WHOLESALE PLATFORM</p>
+  </div>
+  <div class="card">
+    <h2>SIGN IN</h2>
+    <div class="form-group">
+      <label>USER ID</label>
+      <input type="text" id="uid" placeholder="IDを入力">
+    </div>
+    <div class="form-group">
+      <label>PASSWORD</label>
+      <input type="password" id="pw" placeholder="パスワードを入力">
+    </div>
+    <button class="btn-login" onclick="doLogin()">ログイン</button>
+    <div class="hint">
+      <div class="hint-box">
+        <span class="label">業者様</span>
+        <span class="val">user / user123</span>
+      </div>
+      <div class="hint-box">
+        <span class="label">管理者</span>
+        <span class="val">admin / admin123</span>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function doLogin() {
+  const uid = document.getElementById('uid').value;
+  const pw = document.getElementById('pw').value;
+  if (uid === 'admin' && pw === 'admin123') {
+    location.href = 'admin.html';
+  } else if (uid === 'user' && pw === 'user123') {
+    location.href = 'user.html';
+  } else {
+    alert('IDまたはパスワードが違います');
+  }
+}
+document.getElementById('pw').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+</script>
+</body>
+</html>

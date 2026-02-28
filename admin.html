@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LADAMER | 管理画面</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+    background: #0a0a0a;
+    color: #fff;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    width: 220px;
+    background: #000;
+    border-right: 1px solid #c9a84c;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+  }
+  .sidebar-brand {
+    padding: 28px 24px;
+    border-bottom: 1px solid #222;
+  }
+  .sidebar-brand h1 { color: #c9a84c; font-size: 18px; letter-spacing: 4px; font-weight: 300; }
+  .sidebar-brand p { color: #555; font-size: 9px; letter-spacing: 2px; margin-top: 4px; }
+  .sidebar-nav { flex: 1; padding: 16px 0; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 24px;
+    color: #666;
+    font-size: 12px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 2px solid transparent;
+  }
+  .nav-item:hover, .nav-item.active {
+    color: #c9a84c;
+    background: rgba(201,168,76,0.05);
+    border-left-color: #c9a84c;
+  }
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .sidebar-footer {
+    padding: 20px 24px;
+    border-top: 1px solid #1a1a1a;
+  }
+  .logout-btn {
+    width: 100%;
+    background: none;
+    border: 1px solid #333;
+    color: #666;
+    padding: 10px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .logout-btn:hover { border-color: #c9a84c; color: #c9a84c; }
+
+  .main-wrap {
+    margin-left: 220px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .topbar {
+    background: #000;
+    border-bottom: 1px solid #222;
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 99;
+  }
+  .topbar h2 { color: #fff; font-size: 14px; letter-spacing: 4px; font-weight: 300; }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .notification-btn {
+    background: none;
+    border: 1px solid #333;
+    color: #888;
+    padding: 8px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    position: relative;
+  }
+  .notif-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #c9a84c;
+    color: #000;
+    font-size: 9px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+  .admin-name { color: #888; font-size: 12px; }
+
+  main { padding: 32px; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .kpi-card {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 2px;
+    padding: 20px 24px;
+    transition: border-color 0.3s;
+  }
+  .kpi-card:hover { border-color: #c9a84c; }
+  .kpi-label { color: #666; font-size: 10px; letter-spacing: 2px; margin-bottom: 10px; }
+  .kpi-value { color: #c9a84c; font-size: 28px; font-weight: 200; }
+  .kpi-sub { color: #555; font-size: 10px; margin-top: 6px; }
+  .kpi-up { color: #6dc; }
+  .kpi-down { color: #f88; }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+  }
+  .data-table th {
+    background: #111;
+    border: 1px solid #222;
+    padding: 12px 16px;
+    color: #c9a84c;
+    font-size: 10px;
+    letter-spacing: 2px;
+    font-weight: 400;
+    text-align: left;
+  }
+  .data-table td {
+    background: #0d0d0d;
+    border: 1px solid #1a1a1a;
+    padding: 14px 16px;
+    color: #ccc;
+    font-size: 13px;
+  }
+  .data-table tr:hover td { background: #111; }
+  .status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 2px;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+  .status-new { background: rgba(201,168,76,0.15); color: #c9a84c; border: 1px solid rgba(201,168,76,0.3); }
+  .status-processing { background: rgba(100,150,255,0.15); color: #88aaff; border: 1px solid rgba(100,150,255,0.3); }
+  .status-shipped { background: rgba(100,200,100,0.15); color: #6dc; border: 1px solid rgba(100,200,100,0.3); }
+
+  .btn-gold {
+    background: linear-gradient(135deg, #c9a84c, #e8cc80);
+    border: none;
+    color: #000;
+    padding: 8px 20px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: opacity 0.2s;
+  }
+  .btn-gold:hover { opacity: 0.85; }
+  .btn-ghost {
+    background: none;
+    border: 1px solid #333;
+    color: #888;
+    padding: 8px 16px;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .btn-ghost:hover { border-color: #c9a84c; color: #c9a84c; }
+  .btn-sm {
+    padding: 5px 12px;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #222;
+  }
+  .section-header h3 { color: #fff; font-size: 13px; letter-spacing: 4px; font-weight: 300; }
+
+  .form-card {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 2px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .form-field { margin-bottom: 16px; }
+  .form-field label {
+    display: block;
+    color: #c9a84c;
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .form-field input, .form-field select, .form-field textarea {
+    width: 100%;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 2px;
+    padding: 12px 14px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+    border-color: #c9a84c;
+  }
+  .form-field textarea { height: 80px; resize: vertical; }
+  .form-field select option { background: #1a1a1a; }
+
+  .upload-area {
+    border: 2px dashed #333;
+    border-radius: 2px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: #1a1a1a;
+  }
+  .upload-area:hover {
+    border-color: #c9a84c;
+    background: rgba(201,168,76,0.05);
+  }
+  .upload-icon { font-size: 36px; margin-bottom: 12px; }
+  .upload-area p { color: #888; font-size: 12px; letter-spacing: 1px; line-height: 1.8; }
+  .upload-area span { color: #c9a84c; }
+
+  .stock-bar {
+    background: #1a1a1a;
+    height: 4px;
+    border-radius: 2px;
+    margin-top: 6px;
+  }
+  .stock-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+  }
+  .fill-ok { background: linear-gradient(90deg, #c9a84c, #e8cc80); }
+  .fill-low { background: #f88; }
+
+  .inquiry-card {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 2px;
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .inquiry-card:hover { border-color: #c9a84c; }
+  .inquiry-card.unread { border-left: 3px solid #c9a84c; }
+  .inquiry-meta { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .inquiry-from { color: #c9a84c; font-size: 13px; }
+  .inquiry-date { color: #666; font-size: 11px; }
+  .inquiry-subject { color: #fff; font-size: 13px; margin-bottom: 6px; }
+  .inquiry-preview { color: #888; font-size: 11px; line-height: 1.6; }
+  .unread-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #c9a84c;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #111;
+    border: 1px solid #c9a84c;
+    border-radius: 2px;
+    padding: 36px;
+    max-width: 520px;
+    width: 90%;
+  }
+  .modal h3 { color: #c9a84c; font-size: 16px; letter-spacing: 3px; margin-bottom: 20px; }
+  .modal-close-btn {
+    background: none;
+    border: 1px solid #333;
+    color: #888;
+    padding: 10px 24px;
+    cursor: pointer;
+    font-size: 11px;
+    letter-spacing: 2px;
+    border-radius: 2px;
+    transition: all 0.2s;
+    margin-top: 20px;
+  }
+  .modal-close-btn:hover { border-color: #c9a84c; color: #c9a84c; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <h1>LADAMER</h1>
+    <p>ADMIN PANEL</p>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-item active" onclick="showSection('dashboard', this)">
+      <span class="nav-icon">📊</span> ダッシュボード
+    </div>
+    <div class="nav-item" onclick="showSection('orders', this)">
+      <span class="nav-icon">📦</span> 注文管理
+    </div>
+    <div class="nav-item" onclick="showSection('products', this)">
+      <span class="nav-icon">🏷</span> 商品管理
+    </div>
+    <div class="nav-item" onclick="showSection('videos', this)">
+      <span class="nav-icon">🎬</span> 動画管理
+    </div>
+    <div class="nav-item" onclick="showSection('inquiry', this)">
+      <span class="nav-icon">💬</span> 問い合わせ
+    </div>
+    <div class="nav-item" onclick="showSection('users', this)">
+      <span class="nav-icon">👥</span> 業者管理
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="location.href='index.html'">ログアウト</button>
+  </div>
+</aside>
+
+<div class="main-wrap">
+  <div class="topbar">
+    <h2 id="page-title">DASHBOARD</h2>
+    <div class="topbar-right">
+      <button class="notification-btn">🔔<span class="notif-badge">3</span></button>
+      <span class="admin-name">管理者：横川 松華</span>
+    </div>
+  </div>
+
+  <main>
+
+    <div id="sec-dashboard" class="section active">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">今月の注文数</div>
+          <div class="kpi-value">43</div>
+          <div class="kpi-sub kpi-up">▲ 12% 先月比</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">今月の売上</div>
+          <div class="kpi-value">¥1.8M</div>
+          <div class="kpi-sub kpi-up">▲ 8% 先月比</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">取引業者数</div>
+          <div class="kpi-value">28</div>
+          <div class="kpi-sub kpi-up">▲ 2社 今月</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">在庫アラート</div>
+          <div class="kpi-value" style="color:#f88;">2</div>
+          <div class="kpi-sub kpi-down">要補充あり</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h3>NEW ORDERS</h3>
+        <button class="btn-ghost btn-sm" onclick="showSection('orders', document.querySelector('.nav-item:nth-child(2)'))">すべて見る</button>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>注文番号</th>
+            <th>業者名</th>
+            <th>商品</th>
+            <th>金額</th>
+            <th>注文日時</th>
+            <th>ステータス</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>#LDM-2026-092</td>
+            <td>ビューティーサロン A</td>
+            <td>セラム ×5 / ピールパッド ×10</td>
+            <td style="color:#c9a84c;">¥70,500</td>
+            <td>2026/02/28 09:12</td>
+            <td><span class="status status-new">新着</span></td>
+            <td>
+              <button class="btn-gold btn-sm" onclick="updateStatus(this, '対応中')">対応開始</button>
+            </td>
+          </tr>
+          <tr>
+            <td>#LDM-2026-091</td>
+            <td>クリニック B</td>
+            <td>ゴールドリジェネ アンプル ×3</td>
+            <td style="color:#c9a84c;">¥54,000</td>
+            <td>2026/02/28 08:45</td>
+            <td><span class="status status-processing">対応中</span></td>
+            <td>
+              <button class="btn-gold btn-sm" onclick="updateStatus(this, '発送済み')">発送完了</button>
+            </td>
+          </tr>
+          <tr>
+            <td>#LDM-2026-090</td>
+            <td>エステ C</td>
+            <td>CGCPピールパッド ×20</td>
+            <td style="color:#c9a84c;">¥76,000</td>
+            <td>2026/02/27 17:30</td>
+            <td><span class="status status-shipped">発送済み</span></td>
+            <td>
+              <button class="btn-ghost btn-sm">詳細</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="section-header" style="margin-top:32px;">
+        <h3>STOCK ALERT</h3>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="background:#111;border:1px solid #f88;border-radius:2px;padding:20px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <span style="color:#fff;font-size:13px;">CGCPピールパッド スタンダード</span>
+            <span style="color:#f88;font-size:13px;font-weight:600;">8個</span>
+          </div>
+          <div class="stock-bar"><div class="stock-bar-fill fill-low" style="width:8%"></div></div>
+          <div style="color:#888;font-size:10px;margin-top:8px;">発注推奨: 100個〜</div>
+        </div>
+        <div style="background:#111;border:1px solid #c9a84c;border-radius:2px;padding:20px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <span style="color:#fff;font-size:13px;">オリゴフォース セラム 50ml</span>
+            <span style="color:#c9a84c;font-size:13px;font-weight:600;">85本</span>
+          </div>
+          <div class="stock-bar"><div class="stock-bar-fill fill-ok" style="width:85%"></div></div>
+          <div style="color:#888;font-size:10px;margin-top:8px;">適正在庫</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="sec-orders" class="section">
+      <div class="section-header">
+        <h3>ORDER MANAGEMENT</h3>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-ghost btn-sm" onclick="filterOrders('all', this)" style="border-color:#c9a84c;color:#c9a84c;">ALL</button>
+          <button class="btn-ghost btn-sm" onclick="filterOrders('新着', this)">新着</button>
+          <button class="btn-ghost btn-sm" onclick="filterOrders('対応中', this)">対応中</button>
+          <button class="btn-ghost btn-sm" onclick="filterOrders('発送済み', this)">発送済み</button>
+        </div>
+      </div>
+      <table class="data-table" id="orders-table">
+        <thead>
+          <tr>
+            <th>注文番号</th>
+            <th>業者名</th>
+            <th>商品内容</th>
+            <th>金額</th>
+            <th>注文日時</th>
+            <th>ステータス</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-status="新着">
+            <td>#LDM-2026-092</td>
+            <td>ビューティーサロン A</td>
+            <td>セラム ×5 / ピールパッド ×10</td>
+            <td style="color:#c9a84c;">¥70,500</td>
+            <td>2026/02/28 09:12</td>
+            <td><span class="status status-new">新着</span></td>
+            <td><button class="btn-gold btn-sm" onclick="updateStatus(this,'対応中')">対応開始</button></td>
+          </tr>
+          <tr data-status="対応中">
+            <td>#LDM-2026-091</td>
+            <td>クリニック B</td>
+            <td>ゴールドリジェネ アンプル ×3</td>
+            <td style="color:#c9a84c;">¥54,000</td>
+            <td>2026/02/28 08:45</td>
+            <td><span class="status status-processing">対応中</span></td>
+            <td><button class="btn-gold btn-sm" onclick="updateStatus(this,'発送済み')">発送完了</button></td>
+          </tr>
+          <tr data-status="発送済み">
+            <td>#LDM-2026-090</td>
+            <td>エステ C</td>
+            <td>CGCPピールパッド ×20</td>
+            <td style="color:#c9a84c;">¥76,000</td>
+            <td>2026/02/27 17:30</td>
+            <td><span class="status status-shipped">発送済み</span></td>
+            <td><button class="btn-ghost btn-sm">詳細</button></td>
+          </tr>
+          <tr data-status="発送済み">
+            <td>#LDM-2026-089</td>
+            <td>ビューティーサロン A</td>
+            <td>セラム 100ml ×3</td>
+            <td style="color:#c9a84c;">¥33,000</td>
+            <td>2026/02/26 14:20</td>
+            <td><span class="status status-shipped">発送済み</span></td>
+            <td><button class="btn-ghost btn-sm">詳細</button></td>
+          </tr>
+          <tr data-status="新着">
+            <td>#LDM-2026-088</td>
+            <td>サロン D</td>
+            <td>ゴールドコクーン ピールパッド Pro ×15</td>
+            <td style="color:#c9a84c;">¥72,000</td>
+            <td>2026/02/26 10:05</td>
+            <td><span class="status status-new">新着</span></td>
+            <td><button class="btn-gold btn-sm" onclick="updateStatus(this,'対応中')">対応開始</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="sec-products" class="section">
+      <div class="section-header">
+        <h3>PRODUCT MANAGEMENT</h3>
+        <button class="btn-gold" onclick="document.getElementById('add-product-form').scrollIntoView({behavior:'smooth'})">＋ 新商品追加</button>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>商品名</th>
+            <th>カテゴリ</th>
+            <th>価格</th>
+            <th>在庫</th>
+            <th>ステータス</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ゴールドコクーン ピールパッド Pro</td>
+            <td>ピーリング</td>
+            <td>¥4,800</td>
+            <td>
+              120個
+              <div class="stock-bar"><div class="stock-bar-fill fill-ok" style="width:80%"></div></div>
+            </td>
+            <td><span class="status status-new">NEW</span></td>
+            <td>
+              <button class="btn-ghost btn-sm">編集</button>
+              <button class="btn-ghost btn-sm">在庫更新</button>
+            </td>
+          </tr>
+          <tr>
+            <td>オリゴフォース セラム ハイドレーティング</td>
+            <td>セラム</td>
+            <td>¥6,500</td>
+            <td>
+              85本
+              <div class="stock-bar"><div class="stock-bar-fill fill-ok" style="width:57%"></div></div>
+            </td>
+            <td><span class="status status-shipped">販売中</span></td>
+            <td>
+              <button class="btn-ghost btn-sm">編集</button>
+              <button class="btn-ghost btn-sm">在庫更新</button>
+            </td>
+          </tr>
+          <tr>
+            <td>CGCPピールパッド スタンダード</td>
+            <td>ピーリング</td>
+            <td>¥3,800</td>
+            <td>
+              <span style="color:#f88;">8個</span>
+              <div class="stock-bar"><div class="stock-bar-fill fill-low" style="width:5%"></div></div>
+            </td>
+            <td><span class="status" style="background:rgba(255,136,136,0.15);color:#f88;border:1px solid rgba(255,136,136,0.3);">要補充</span></td>
+            <td>
+              <button class="btn-gold btn-sm">緊急発注</button>
+              <button class="btn-ghost btn-sm">編集</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div id="add-product-form">
+        <div class="section-header" style="margin-top:32px;">
+          <h3>ADD NEW PRODUCT</h3>
+        </div>
+        <div class="form-card">
+          <div class="form-row">
+            <div class="form-field">
+              <label>商品名</label>
+              <input type="text" placeholder="商品名を入力">
+            </div>
+            <div class="form-field">
+              <label>カテゴリ</label>
+              <select>
+                <option>ピーリング</option>
+                <option>セラム</option>
+                <option>アンプル</option>
+                <option>その他</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>卸価格（税別）</label>
+              <input type="number" placeholder="0">
+            </div>
+            <div class="form-field">
+              <label>初期在庫数</label>
+              <input type="number" placeholder="0">
+            </div>
+          </div>
+          <div class="form-field">
+            <label>商品説明</label>
+            <textarea placeholder="業者向けの商品説明を入力"></textarea>
+          </div>
+          <div class="form-field">
+            <label>商品画像</label>
+            <div class="upload-area" onclick="document.getElementById('img-input').click()">
+              <div class="upload-icon">🖼</div>
+              <p>クリックまたはドラッグ＆ドロップで画像をアップロード<br><span>JPG, PNG, WEBP / 最大5MB</span></p>
+              <input type="file" id="img-input" accept="image/*" style="display:none" onchange="previewImage(this)">
+            </div>
+            <div id="img-preview" style="margin-top:12px;"></div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:8px;">
+            <button class="btn-gold" onclick="showToast('商品を登録しました')">商品を登録する</button>
+            <button class="btn-ghost">キャンセル</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="sec-videos" class="section">
+      <div class="section-header">
+        <h3>VIDEO MANAGEMENT</h3>
+      </div>
+      <div class="form-card">
+        <div class="form-row">
+          <div class="form-field">
+            <label>動画タイトル</label>
+            <input type="text" placeholder="例：ピールパッド使い方ガイド">
+          </div>
+          <div class="form-field">
+            <label>対象商品</label>
+            <select>
+              <option>ゴールドコクーン ピールパッド Pro</option>
+              <option>オリゴフォース セラム</option>
+              <option>全商品共通</option>
+              <option>新商品紹介</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label>動画ファイルアップロード</label>
+          <div class="upload-area" onclick="document.getElementById('video-input').click()">
+            <div class="upload-icon">🎬</div>
+            <p>クリックまたはドラッグ＆ドロップで動画をアップロード<br><span>MP4, MOV / 最大500MB</span></p>
+            <input type="file" id="video-input" accept="video/*" style="display:none" onchange="showToast('動画を選択しました（デモ）')">
+          </div>
+        </div>
+        <div class="form-field">
+          <label>または YouTube / Vimeo URL を埋め込む</label>
+          <input type="url" placeholder="https://youtube.com/...">
+        </div>
+        <div style="display:flex;gap:12px;">
+          <button class="btn-gold" onclick="showToast('動画をアップロードしました')">アップロード</button>
+          <button class="btn-ghost">キャンセル</button>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h3>UPLOADED VIDEOS</h3>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr><th>タイトル</th><th>対象商品</th><th>アップロード日</th><th>表示状態</th><th>操作</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ピールパッド 使い方完全ガイド</td>
+            <td>CGCPピールパッド</td>
+            <td>2026/02/15</td>
+            <td><span class="status status-shipped">公開中</span></td>
+            <td><button class="btn-ghost btn-sm">編集</button> <button class="btn-ghost btn-sm">非公開</button></td>
+          </tr>
+          <tr>
+            <td>セラム 正しい使い方 8滴</td>
+            <td>オリゴフォース セラム</td>
+            <td>2026/02/10</td>
+            <td><span class="status status-shipped">公開中</span></td>
+            <td><button class="btn-ghost btn-sm">編集</button> <button class="btn-ghost btn-sm">非公開</button></td>
+          </tr>
+          <tr>
+            <td>2026年 新商品紹介</td>
+            <td>全商品</td>
+            <td>2026/02/01</td>
+            <td><span class="status status-processing">非公開</span></td>
+            <td><button class="btn-gold btn-sm">公開する</button> <button class="btn-ghost btn-sm">削除</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="sec-inquiry" class="section">
+      <div class="section-header">
+        <h3>INQUIRY MANAGEMENT</h3>
+        <span style="color:#888;font-size:12px;">未対応: <span style="color:#c9a84c;">3件</span></span>
+      </div>
+      <div class="inquiry-card unread" onclick="openInquiry('ビューティーサロン A', 'ピールパッドの定期便について', '毎月一定数を確保できますでしょうか？現在月20個ペースで使用しており、定期便での発注を検討しています。')">
+        <div class="inquiry-meta">
+          <span class="inquiry-from"><span class="unread-dot"></span>ビューティーサロン A</span>
+          <span class="inquiry-date">2026/02/28 10:32</span>
+        </div>
+        <div class="inquiry-subject">ピールパッドの定期便について</div>
+        <div class="inquiry-preview">毎月一定数を確保できますでしょうか？現在月20個ペースで使用しており...</div>
+      </div>
+      <div class="inquiry-card unread" onclick="openInquiry('クリニック B', '新商品のサンプル提供について', '新しく発売されたゴールドコクーン Pro について、サンプルをいただくことは可能でしょうか？')">
+        <div class="inquiry-meta">
+          <span class="inquiry-from"><span class="unread-dot"></span>クリニック B</span>
+          <span class="inquiry-date">2026/02/27 16:15</span>
+        </div>
+        <div class="inquiry-subject">新商品のサンプル提供について</div>
+        <div class="inquiry-preview">新しく発売されたゴールドコクーン Pro について、サンプルをいただくことは...</div>
+      </div>
+      <div class="inquiry-card" onclick="openInquiry('エステ C', '請求書の再発行依頼', '先月分の請求書を再発行していただけますでしょうか。よろしくお願いします。')">
+        <div class="inquiry-meta">
+          <span class="inquiry-from">エステ C</span>
+          <span class="inquiry-date">2026/02/26 09:00</span>
+        </div>
+        <div class="inquiry-subject">請求書の再発行依頼</div>
+        <div class="inquiry-preview">先月分の請求書を再発行していただけますでしょうか...</div>
+      </div>
+    </div>
+
+    <div id="sec-users" class="section">
+      <div class="section-header">
+        <h3>USER MANAGEMENT</h3>
+        <button class="btn-gold" onclick="showToast('業者追加フォームを開きます（デモ）')">＋ 業者追加</button>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr><th>業者名</th><th>ID</th><th>登録日</th><th>今月注文数</th><th>ステータス</th><th>操作</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ビューティーサロン A</td>
+            <td>salon_a</td>
+            <td>2025/10/01</td>
+            <td>8件</td>
+            <td><span class="status status-shipped">有効</span></td>
+            <td><button class="btn-ghost btn-sm">編集</button> <button class="btn-ghost btn-sm">停止</button></td>
+          </tr>
+          <tr>
+            <td>クリニック B</td>
+            <td>clinic_b</td>
+            <td>2025/11/15</td>
+            <td>5件</td>
+            <td><span class="status status-shipped">有効</span></td>
+            <td><button class="btn-ghost btn-sm">編集</button> <button class="btn-ghost btn-sm">停止</button></td>
+          </tr>
+          <tr>
+            <td>エステ C</td>
+            <td>esthe_c</td>
+            <td>2025/12/01</td>
+            <td>3件</td>
+            <td><span class="status status-shipped">有効</span></td>
+            <td><button class="btn-ghost btn-sm">編集</button> <button class="btn-ghost btn-sm">停止</button></td>
+          </tr>
+          <tr>
+            <td>サロン D</td>
+            <td>salon_d</td>
+            <td>2026/01/20</td>
+            <td>2件</td>
+            <td><span class="status status-processing">仮登録</span></td>
+            <td><button class="btn-gold btn-sm">承認</button> <button class="btn-ghost btn-sm">却下</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<div class="modal-overlay" id="inquiry-modal">
+  <div class="modal">
+    <h3 id="inq-title"></h3>
+    <div style="color:#888;font-size:11px;margin-bottom:16px;" id="inq-from"></div>
+    <p style="color:#ccc;font-size:13px;line-height:1.8;margin-bottom:20px;" id="inq-body"></p>
+    <div class="form-field">
+      <label>返信内容</label>
+      <textarea placeholder="返信を入力してください..."></textarea>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <button class="btn-gold" onclick="showToast('返信を送信しました');closeInquiry()">返信送信（LINE通知）</button>
+      <button class="modal-close-btn" onclick="closeInquiry()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" style="
+  position:fixed; bottom:32px; left:50%; transform:translateX(-50%);
+  background:#c9a84c; color:#000; padding:12px 28px;
+  border-radius:2px; font-size:12px; letter-spacing:2px;
+  font-weight:600; display:none; z-index:999;
+  box-shadow: 0 4px 20px rgba(201,168,76,0.5);
+"></div>
+
+<script>
+function showSection(name, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+  const titles = {
+    dashboard: 'DASHBOARD',
+    orders: 'ORDER MANAGEMENT',
+    products: 'PRODUCT MANAGEMENT',
+    videos: 'VIDEO MANAGEMENT',
+    inquiry: 'INQUIRY MANAGEMENT',
+    users: 'USER MANAGEMENT'
+  };
+  document.getElementById('page-title').textContent = titles[name] || name.toUpperCase();
+}
+
+function updateStatus(btn, newStatus) {
+  const td = btn.closest('td');
+  const statusTd = btn.closest('tr').querySelector('td:nth-child(6)');
+  if (newStatus === '対応中') {
+    statusTd.innerHTML = '<span class="status status-processing">対応中</span>';
+    btn.textContent = '発送完了';
+    btn.onclick = function() { updateStatus(this, '発送済み'); };
+  } else if (newStatus === '発送済み') {
+    statusTd.innerHTML = '<span class="status status-shipped">発送済み</span>';
+    td.innerHTML = '<button class="btn-ghost btn-sm">詳細</button>';
+    showToast('発送完了をLINE通知しました 📱');
+  }
+}
+
+function filterOrders(status, btn) {
+  document.querySelectorAll('#orders-table tbody tr').forEach(tr => {
+    if (status === 'all' || tr.dataset.status === status) {
+      tr.style.display = '';
+    } else {
+      tr.style.display = 'none';
+    }
+  });
+}
+
+function previewImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('img-preview').innerHTML =
+      `<img src="${e.target.result}" style="max-height:120px;border:1px solid #333;border-radius:2px;">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function openInquiry(from, subject, body) {
+  document.getElementById('inq-title').textContent = subject;
+  document.getElementById('inq-from').textContent = 'From: ' + from;
+  document.getElementById('inq-body').textContent = body;
+  document.getElementById('inquiry-modal').classList.add('open');
+}
+function closeInquiry() {
+  document.getElementById('inquiry-modal').classList.remove('open');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2500);
+}
+</script>
+</body>
+</html>
