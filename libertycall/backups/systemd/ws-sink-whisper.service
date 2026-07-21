@@ -1,0 +1,19 @@
+[Unit]
+Description=Whisper ASR WebSocket Server (port 8083)
+After=network.target
+
+[Service]
+Type=simple
+User=deploy
+WorkingDirectory=/opt/libertycall/asr_stream
+Environment=GOOGLE_APPLICATION_CREDENTIALS=/opt/libertycall/config/google-credentials.json
+Environment=PATH=/opt/libertycall/venv/bin:/usr/bin
+Environment=WHISPER_MODEL=large-v3-turbo
+Environment=WHISPER_DEVICE=cpu
+Environment=WHISPER_COMPUTE=int8
+ExecStart=/opt/libertycall/venv/bin/python3 /opt/libertycall/asr_stream/ws_sink_whisper.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

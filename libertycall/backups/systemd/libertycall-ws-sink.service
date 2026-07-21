@@ -1,0 +1,21 @@
+[Unit]
+Description=LibertyCall WS Sink (ASR WebSocket Server)
+After=network.target freeswitch.service
+
+[Service]
+Type=simple
+User=deploy
+WorkingDirectory=/opt/libertycall/asr_stream
+Environment="LIBERTYCALL_CONSOLE_ENABLED=true"
+Environment="LIBERTYCALL_CONSOLE_API_BASE_URL=http://localhost:8001"
+Environment="PYTHONPATH=/opt/libertycall"
+Environment="GOOGLE_APPLICATION_CREDENTIALS=/opt/libertycall/key/google_tts.json"
+Environment="GOOGLE_CLOUD_PROJECT=libertycall-main"
+ExecStart=/opt/libertycall/venv/bin/python3 /opt/libertycall/asr_stream/ws_sink.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
