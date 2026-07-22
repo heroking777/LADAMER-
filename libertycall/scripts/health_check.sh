@@ -27,8 +27,7 @@ check_process_status() {
 
 # Function to check GPU status
 check_gpu_status() {
-    local gpu_status=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader)
-    if [ "$gpu_status" -lt 100 ]; then
+    if command -v nvidia-smi &> /dev/null; then
         echo "\"gpu\": {\"status\": \"up\", \"timestamp\": \"$(date +%FT%T%z)\"}"
     else
         echo "\"gpu\": {\"status\": \"down\", \"timestamp\": \"$(date +%FT%T%z)\"}"
@@ -38,7 +37,7 @@ check_gpu_status() {
 
 # Function to check Ollama API status
 check_ollama_api_status() {
-    local ollama_status=$(curl -s -o /dev/null -w "%{http_code}" http://ollama-api:8080/health)
+    local ollama_status=$(curl -s -o /dev/null -w "%{http_code}" http://100.82.144.4:11434/api/tags)
     if [ $ollama_status -eq 200 ]; then
         echo "\"ollama_api\": {\"status\": \"up\", \"timestamp\": \"$(date +%FT%T%z)\"}"
     else
@@ -49,14 +48,14 @@ check_ollama_api_status() {
 
 # Main script
 echo "{"
-check_http_health "ws-sink-go" "http://ws-sink-go:9000/health"
-check_http_health "contact-api-go" "http://contact-api-go:5001/health"
-check_http_health "console-backend-go" "http://console-backend-go:8001/health"
-check_http_health "gateway-go" "http://gateway-go:8080/health"
-check_process_status "ws-sink-go" "ws_sink_go"
-check_process_status "contact-api-go" "contact_api_go"
-check_process_status "console-backend-go" "console_backend_go"
-check_process_status "gateway-go" "gateway_go"
+check_http_health "ws-sink-go" "http://localhost:9000/health"
+check_http_health "contact-api-go" "http://localhost:5001/health"
+check_http_health "console-backend-go" "http://localhost:8001/health"
+check_http_health "gateway-go" "http://localhost:8080/health"
+check_process_status "ws-sink-go" "ws-sink-go"
+check_process_status "contact-api-go" "contact-api-go"
+check_process_status "console-backend-go" "console-backend-go"
+check_process_status "gateway-go" "gateway-go"
 check_gpu_status
 check_ollama_api_status
 echo "}"
