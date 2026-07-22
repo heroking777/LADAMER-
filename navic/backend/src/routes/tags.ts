@@ -57,19 +57,31 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { name, category, color } = req.body;
-    if (!name) return res.status(400).json({ error: 'Tag name is required' });
     const result = await db.run(
-      'INSERT INTO tags (name, category, color) VALUES (?, ?, ?)',
-      [name, category || 'その他', color || '#00d4aa']
+      'UPDATE tags SET name = ?, category = ?, color = ? WHERE id = ?',
+      [name, category || 'その他', color || '#00d4aa', req.params.id]
     );
-    const newTag = await db.get('SELECT * FROM tags WHERE id = ?', [result.lastID]);
-    res.status(201).json(newTag);
+    if (result.changes === 0) return res.status(404).json({ error: 'Tag not found' });
+    const updatedTag = await db.get('SELECT * FROM tags WHERE id = ?', [req.params.id]);
+    res.json(updatedTag);
   } catch (error) {
-    console.error('Tag POST error:', error);
-    res.status(500).json({ error: 'Failed to create tag' });
+    console.error('Tag PUT error:', error);
+    res.status(500).json({ error: 'Failed to update tag' });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    await db.run('DELETE FROM staff_tags WHERE tag_id = ?', [req.params.id]);
+    const result = await db.run('DELETE FROM tags WHERE id = ?', [req.params.id]);
+    if (result.changes === 0) return res.status(404).json({ error: 'Tag not found' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Tag DELETE error:', error);
+    res.status(500).json({ error: 'Failed to delete tag' });
   }
 });
 
