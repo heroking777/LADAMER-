@@ -518,20 +518,89 @@ window.deleteCustomer = async function (id) {
 async function renderLocations(container) {
   try {
     const data = await fetchAPI("/locations");
-    let html = '<table style="width:100%;border-collapse:collapse;"><thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">名称</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">住所</th></tr></thead><tbody>';
+    let html = `<table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+          <th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">名称</th>
+          <th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">住所</th>
+          <th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">操作</th>
+        </tr>
+      </thead>
+      <tbody>`;
     if (data && data.length > 0) {
       for (let l of data) {
-        html += '<tr><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">' + l.name + '</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">' + (l.address || '--') + '</td></tr>';
+        html += `<tr>
+          <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${l.name}</td>
+          <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${(l.address || '--')}</td>
+          <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">
+            <button onclick="window.editLocation(${l.id})" style="background:rgba(0,212,170,0.15);border:none;color:#00d4aa;padding:4px 12px;border-radius:4px;cursor:pointer;">編集</button>
+            <button onclick="window.deleteLocation(${l.id})" style="background:rgba(220,53,69,0.15);border:none;color:#dc3545;padding:4px 12px;border-radius:4px;cursor:pointer;">削除</button>
+          </td>
+        </tr>`;
       }
     } else {
-      html += '<tr><td colspan="2" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">場所データがありません</td></tr>';
+      html += `<tr><td colspan="3" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">場所データがありません</td></tr>`;
     }
-    html += '</tbody></table>';
+    html += `</tbody>
+    </table>`;
     container.innerHTML = html;
   } catch (error) {
-    container.innerHTML = '<div style="padding:20px;color:#ff6b6b;"><h3>エラー</h3><p>' + error.message + '</p></div>';
+    container.innerHTML = `<div style="padding:20px;color:#ff6b6b;"><h3>エラー</h3><p>${error.message}</p></div>`;
   }
 }
+window.editLocation = async function(id) {
+  try {
+    const data = await fetchAPI(`/locations/${id}`);
+    const name = prompt("名前を編集:", data.name) || "";
+    if (!name) return;
+    const address = prompt("住所を編集:", data.address) || "";
+    const phone = prompt("電話番号を編集:", data.phone) || "";
+
+    await fetch(`/navic/api/locations/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, address, phone })
+    });
+    alert("場所を更新しました");
+    loadPage('locations');
+  } catch (error) {
+    alert("更新エラー: " + error.message);
+  }
+};
+window.deleteLocation = async function(id) {
+  if (!confirm("この場所を削除してもよろしいですか？")) return;
+
+  try {
+    await fetch(`/navic/api/locations/${id}`, { method: "DELETE" });
+    alert("場所を削除しました");
+    loadPage('locations');
+  } catch (error) {
+    alert("削除エラー: " + error.message);
+  }
+};
+window.showAddLocationModal = function() {
+  const name = prompt("名前を入力してください:");
+  if (!name) return;
+  const address = prompt("住所を入力してください:");
+  if (!address) return;
+  const phone = prompt("電話番号を入力してください:");
+  if (!phone) return;
+
+  fetch("/navic/api/locations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, address, phone })
+  })
+    .then(res => {
+      if (!res.ok) throw new Error('場所の追加に失敗しました');
+      return res.json();
+    })
+    .then(() => {
+      alert("場所を追加しました");
+      loadPage('locations');
+    })
+    .catch(err => alert('エラー: ' + err.message));
+};
 
 async function renderAttendance(container) {
   try {
