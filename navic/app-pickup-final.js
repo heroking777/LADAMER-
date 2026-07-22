@@ -502,6 +502,40 @@ async function renderTags(container) {
   }
 }
 
+async function addTag() {
+  const name = prompt("タグ名を入力してください:");
+  if (!name) return;
+  const category = prompt("カテゴリを入力してください（例: 体格, 雰囲気）:") || "その他";
+  const color = prompt("色を入力してください（例: #ff6b6b）:") || "#00d4aa";
+  fetch("/navic/api/tags", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, category, color }) })
+    .then(res => res.json())
+    .then(() => { alert("タグを追加しました"); loadPage("tags"); })
+    .catch(err => alert("エラー: " + err.message));
+}
+
+async function editTag(id) {
+  fetch(`/navic/api/tags/${id}`)
+    .then(res => res.json())
+    .then(data => {
+      const updatedName = prompt("タグ名を編集:", data.name) || "";
+      if (!updatedName) return;
+      const updatedCategory = prompt("カテゴリを編集:", data.category || "その他") || "その他";
+      const updatedColor = prompt("色を編集:", data.color || "#00d4aa") || "#00d4aa";
+      fetch(`/navic/api/tags/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: updatedName, category: updatedCategory, color: updatedColor }) })
+        .then(res => res.json())
+        .then(() => { alert("タグを更新しました"); loadPage("tags"); })
+        .catch(err => alert("エラー: " + err.message));
+    })
+    .catch(err => alert("エラー: " + err.message));
+}
+
+async function deleteTag(id) {
+  if (!confirm("このタグを削除してもよろしいですか？")) return;
+  fetch(`/navic/api/tags/${id}`, { method: "DELETE" })
+    .then(() => { alert("タグを削除しました"); loadPage("tags"); })
+    .catch(err => alert("エラー: " + err.message));
+}
+
 function addTag() {
   const name = prompt("タグ名を入力してください:");
   if (!name) return;
