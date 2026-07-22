@@ -432,13 +432,31 @@ window.showAddStaff = function () {
 async function renderCustomers(container) {
   try {
     const data = await fetchAPI("/customers");
-    let html = '<table style="width:100%;border-collapse:collapse;"><thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">名前</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">電話番号</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">来店回数</th></tr></thead><tbody>';
+    let html = `
+      <button onclick="addCustomer()" style="background:#00d4aa;border:none;color:#0a0a0f;padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:600;">追加</button>
+      <table style="width:100%;border-collapse:collapse;"><thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+        <th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">名前</th>
+        <th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">電話番号</th>
+        <th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">来店回数</th>
+        <th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">操作</th>
+      </tr></thead><tbody>
+    `;
     if (data && data.length > 0) {
       for (let c of data) {
-        html += '<tr><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">' + c.name + '</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">' + c.phone + '</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">' + c.visit_count + '回</td></tr>';
+        html += `
+          <tr>
+            <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${c.name}</td>
+            <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${c.phone}</td>
+            <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${c.visit_count}回</td>
+            <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">
+              <button onclick="editCustomer(${c.id})" style="background:rgba(0,212,170,0.15);border:none;color:#00d4aa;padding:4px 12px;border-radius:4px;cursor:pointer;">編集</button>
+              <button onclick="deleteCustomer(${c.id})" style="background:rgba(220,53,69,0.15);border:none;color:#dc3545;padding:4px 12px;border-radius:4px;cursor:pointer;">削除</button>
+            </td>
+          </tr>
+        `;
       }
     } else {
-      html += '<tr><td colspan="3" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">顧客データがありません</td></tr>';
+      html += '<tr><td colspan="4" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">顧客データがありません</td></tr>';
     }
     html += '</tbody></table>';
     container.innerHTML = html;
