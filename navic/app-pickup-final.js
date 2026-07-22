@@ -465,6 +465,56 @@ async function renderCustomers(container) {
   }
 }
 
+window.addCustomer = async function () {
+  const name = prompt("名前を入力してください:");
+  if (!name) return;
+  const phone = prompt("電話番号を入力してください:");
+  if (!phone) return;
+
+  try {
+    await fetch("/navic/api/customers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone })
+    });
+    alert("顧客を追加しました");
+    loadPage('customers');
+  } catch (error) {
+    alert("追加エラー: " + error.message);
+  }
+};
+
+window.editCustomer = async function (id) {
+  try {
+    const data = await fetchAPI(`/customers/${id}`);
+    const name = prompt("名前を編集:", data.name) || "";
+    if (!name) return;
+    const phone = prompt("電話番号を編集:", data.phone) || "";
+
+    await fetch(`/navic/api/customers/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone })
+    });
+    alert("顧客を更新しました");
+    loadPage('customers');
+  } catch (error) {
+    alert("更新エラー: " + error.message);
+  }
+};
+
+window.deleteCustomer = async function (id) {
+  if (!confirm("この顧客を削除してもよろしいですか？")) return;
+
+  try {
+    await fetch(`/navic/api/customers/${id}`, { method: "DELETE" });
+    alert("顧客を削除しました");
+    loadPage('customers');
+  } catch (error) {
+    alert("削除エラー: " + error.message);
+  }
+};
+
 async function renderLocations(container) {
   try {
     const data = await fetchAPI("/locations");
