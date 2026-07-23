@@ -908,16 +908,9 @@ window.debugRenderPickup = async function() {
 
 // デバッグ用のrenderPickupラッパー
 window.debugRenderPickup = async function() {
-  console.log("debugRenderPickup called");
   const container = document.getElementById("content-area");
-  console.log("container:", container);
   if (container) {
-    try {
-      await renderPickup(container);
-      console.log("renderPickup completed");
-    } catch (e) {
-      console.error("renderPickup error:", e);
-    }
+    await renderPickup(container);
   }
 };
 
