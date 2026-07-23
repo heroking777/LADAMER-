@@ -871,16 +871,9 @@ window.debugRenderPickup = async function() {
 
 // デバッグ用のrenderPickupラッパー
 window.debugRenderPickup = async function() {
-  console.log("debugRenderPickup called");
   const container = document.getElementById("content-area");
-  console.log("container:", container);
   if (container) {
-    try {
-      await renderPickup(container);
-      console.log("renderPickup completed");
-    } catch (e) {
-      console.error("renderPickup error:", e);
-    }
+    await renderPickup(container);
   }
 };
 
@@ -902,45 +895,7 @@ window.debugRenderPickup = async function() {
 };
 
 // デバッグ版movePickup
-window.debugMovePickup = async function(staffId, direction) {
-  console.log("debugMovePickup called:", staffId, direction);
-  try {
-    const settings = await fetchAPI("/pickup/settings");
-    console.log("current settings:", settings);
-    let priorities = settings.map(s => ({ staff_id: s.staff_id, priority: s.priority }));
-    
-    let current = priorities.find(p => p.staff_id === staffId);
-    if (!current) {
-      current = { staff_id: staffId, priority: 0 };
-      priorities.push(current);
-    }
-    
-    const newPriority = current.priority + direction;
-    if (newPriority < 0) return;
-    
-    const target = priorities.find(p => p.priority === newPriority);
-    if (target) {
-      target.priority = current.priority;
-    }
-    current.priority = newPriority;
-    
-    console.log("sending priorities:", priorities);
-    const response = await fetch("/navic/api/pickup/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ settings: priorities })
-    });
-    
-    const responseText = await response.text();
-    console.log("response status:", response.status);
-    console.log("response body:", responseText);
-    
-    if (!response.ok) throw new Error("保存に失敗しました");
-    await window.debugRenderPickup();
-  } catch (error) {
-    alert("移動エラー: " + error.message);
-  }
-};
+// Remove debugMovePickup
 async function resetPickupOrder() {
   if (!confirm("おすすめ順位をリセットしますか？")) return;
   
