@@ -616,10 +616,10 @@ async function renderAttendance(container) {
     container.innerHTML = `<div style="padding:20px;color:#ff6b6b;"><h3>エラー</h3><p>${error.message}</p></div>`;
   }
 }
-// スタッフの出勤スケジュール表示
+// 7-day calendar view for staff schedule
 window.showStaffSchedule = async function(staffId) {
   try {
-    const data = await fetchAPI(`/attendance/staff/${staffId}`);
+    const data = await fetchAPI(`/attendance/week/${staffId}`);
     if (!data || data.length === 0) {
       alert("出勤履歴がありません");
       return;
@@ -637,7 +637,6 @@ window.showStaffSchedule = async function(staffId) {
     
     let html = `<h2 style="color:white;margin-bottom:20px;">${staffName} の出勤スケジュール</h2>`;
     html += `<button onclick="this.closest(\"div[style]\").remove()" style="background:#ff6b6b;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;float:right;">閉じる</button>`;
-    html += `<div style="clear:both;margin-bottom:20px;"></div>`;
     html += `<table style="width:100%;border-collapse:collapse;">`;
     html += `<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);">`;
     html += `<th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">日付</th>`;
@@ -646,24 +645,35 @@ window.showStaffSchedule = async function(staffId) {
     html += `<th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">状態</th>`;
     html += `</tr></thead><tbody>`;
     
-    for (let record of data) {
-      let statusText = record.status || "未出勤";
-      let statusColor = "#FF9800";
-      if (record.status === "working") { statusText = "出勤中"; statusColor = "#4CAF50"; }
-      else if (record.status === "scheduled") { statusText = "予定"; statusColor = "#2196F3"; }
-      else if (record.status === "off") { statusText = "休み"; statusColor = "#9E9E9E"; }
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
       
-      html += `<tr>`;
-      html += `<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${record.date || "--"}</td>`;
-      html += `<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${record.check_in || "--"}</td>`;
-      html += `<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${record.check_out || "--"}</td>`;
-      html += `<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="background:${statusColor};color:white;padding:2px 10px;border-radius:10px;font-size:12px;">${statusText}</span></td>`;
-      html += `</tr>`;
+      let checkIn = "--";
+      let checkOut = "--";
+      let statusText = "未出勤";
+      let statusColor = "#FF9800";
+      
+      const record = data.find(d => d.date === formattedDate);
+      if (record) {
+        checkIn = record.check_in || "--";
+        checkOut = record.check_out || "--";
+        statusText = record.status || "未出勤";
+        statusColor = "#FF9800";
+        if (record.status === "working") { statusText = "出勤中"; statusColor = "#4CAF50"; }
+        else if (record.status === "scheduled") { statusText = "予定"; statusColor = "#2196F3"; }
+        else if (record.status === "off") { statusText = "休み"; statusColor = "#9E9E9E"; }
+      } else {
+        html += `<tr onclick="window.addScheduleDirect(${staffId}, '${formattedDate}')"><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${formattedDate}</td><td colspan="3" style="text-align:center;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">クリックで追加</td></tr>`;
+        continue;
+      }
+      
+      html += `<tr onclick="window.editSchedule(${staffId}, '${formattedDate}')"><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${formattedDate}</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${checkIn}</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${checkOut}</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="background:${statusColor};color:white;padding:2px 10px;border-radius:10px;font-size:12px;">${statusText}</span></td></tr>`;
     }
-    html += `</tbody></table>`;
     
-    // 新規スケジュール追加ボタン
-    html += `<div style="margin-top:20px;"><button onclick="window.addSchedule(${staffId})" style="background:#4CAF50;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">+ スケジュール追加</button></div>`;
+    html += `</tbody></table>`;
     
     modalContent.innerHTML = html;
     modal.appendChild(modalContent);
@@ -673,6 +683,47 @@ window.showStaffSchedule = async function(staffId) {
     modal.addEventListener("click", (e) => {
       if (e.target === modal) modal.remove();
     });
+  } catch (error) {
+    alert("エラー: " + error.message);
+  }
+};
+
+// Helper functions
+window.addScheduleDirect = async function(staffId, date) {
+  const checkIn = prompt("出勤時間を入力 (HH:MM):", "09:00");
+  if (!checkIn) return;
+  const checkOut = prompt("退勤時間を入力 (HH:MM):", "18:00");
+  if (!checkOut) return;
+
+  try {
+    const response = await fetch("/navic/api/schedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ staffId, date, checkIn, checkOut })
+    });
+    if (!response.ok) throw new Error("登録に失敗しました");
+    alert("スケジュールを追加しました");
+    loadPage('attendance');
+  } catch (error) {
+    alert("エラー: " + error.message);
+  }
+};
+
+window.editSchedule = async function(staffId, date) {
+  const checkIn = prompt("出勤時間を編集 (HH:MM):", "09:00");
+  if (!checkIn) return;
+  const checkOut = prompt("退勤時間を編集 (HH:MM):", "18:00");
+  if (!checkOut) return;
+
+  try {
+    const response = await fetch("/navic/api/schedule", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ staffId, date, checkIn, checkOut })
+    });
+    if (!response.ok) throw new Error("更新に失敗しました");
+    alert("スケジュールを更新しました");
+    loadPage('attendance');
   } catch (error) {
     alert("エラー: " + error.message);
   }
