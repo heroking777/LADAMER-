@@ -602,16 +602,40 @@ window.showAddLocationModal = function() {
     .catch(err => alert('エラー: ' + err.message));
 };
 
+const ATTENDANCE_STATUS_LABEL = {
+  working: '勤務中',
+  completed: '退勤済',
+  scheduled: '予定'
+};
+
+const cellStyle = 'padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);';
+const btnStyle = 'margin-right:6px;padding:4px 12px;border:none;border-radius:4px;cursor:pointer;color:#fff;';
+
+// 本日の出勤状況（出勤/退勤ボタン付き）
 async function renderAttendance(container) {
   try {
-    const data = await fetchAPI("/attendance");
-    let html = '<table style="width:100%;border-collapse:collapse;"><thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">スタッフ</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">日付</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">出勤</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">退勤</th></tr></thead><tbody>';
+    const data = await fetchAPI("/attendance/today");
+    let html = '<table style="width:100%;border-collapse:collapse;"><thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">スタッフ</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">出勤</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">退勤</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">状態</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">操作</th></tr></thead><tbody>';
     if (data && data.length > 0) {
       for (let a of data) {
-        html += '<tr><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">' + a.staff_name + '</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">' + a.date + '</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">' + (a.check_in || '--') + '</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">' + (a.check_out || '--') + '</td></tr>';
+        const staffId = a.staff_id;
+        const checkIn = a.check_in || '';
+        const checkOut = a.check_out || '';
+        const status = a.status ? (ATTENDANCE_STATUS_LABEL[a.status] || a.status) : '未出勤';
+
+        let actions = '';
+        if (!checkIn) {
+          actions += '<button onclick="window.checkIn(' + staffId + ')" style="' + btnStyle + 'background:#00d4aa;">出勤</button>';
+        }
+        if (checkIn && !checkOut) {
+          actions += '<button onclick="window.checkOut(' + staffId + ')" style="' + btnStyle + 'background:#ff9f43;">退勤</button>';
+        }
+        actions += '<button onclick="window.showStaffSchedule(' + staffId + ')" style="' + btnStyle + 'background:rgba(255,255,255,0.12);">スケジュール</button>';
+
+        html += '<tr><td style="' + cellStyle + '">' + (a.staff_name || staffId) + '</td><td style="' + cellStyle + '">' + (checkIn || '--') + '</td><td style="' + cellStyle + '">' + (checkOut || '--') + '</td><td style="' + cellStyle + '">' + status + '</td><td style="' + cellStyle + '">' + actions + '</td></tr>';
       }
     } else {
-      html += '<tr><td colspan="4" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">出勤データがありません</td></tr>';
+      html += '<tr><td colspan="5" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">出勤データがありません</td></tr>';
     }
     html += '</tbody></table>';
     container.innerHTML = html;
@@ -619,6 +643,95 @@ async function renderAttendance(container) {
     container.innerHTML = '<div style="padding:20px;color:#ff6b6b;"><h3>エラー</h3><p>' + error.message + '</p></div>';
   }
 }
+
+function attendanceContentArea() {
+  return document.getElementById('content-area') || document.querySelector('.content-area');
+}
+
+// 出勤打刻
+window.checkIn = async function (staffId) {
+  try {
+    const response = await fetch("/navic/api/attendance/checkin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ staffId })
+    });
+    if (!response.ok) throw new Error("出勤打刻に失敗しました");
+    const container = attendanceContentArea();
+    if (container) await renderAttendance(container);
+  } catch (error) {
+    alert("エラー: " + error.message);
+  }
+};
+
+// 退勤打刻
+window.checkOut = async function (staffId) {
+  try {
+    const response = await fetch("/navic/api/attendance/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ staffId })
+    });
+    if (!response.ok) throw new Error("退勤打刻に失敗しました");
+    const container = attendanceContentArea();
+    if (container) await renderAttendance(container);
+  } catch (error) {
+    alert("エラー: " + error.message);
+  }
+};
+
+// 週間カレンダー表示（今日から7日間）
+window.showStaffSchedule = async function (staffId) {
+  try {
+    const response = await fetch("/navic/api/attendance/week/" + staffId);
+    if (!response.ok) throw new Error("週間スケジュールの取得に失敗しました");
+    const week = await response.json();
+
+    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+    let cards = '';
+    for (let day of week) {
+      const d = new Date(day.date + "T00:00:00");
+      const label = (d.getMonth() + 1) + "/" + d.getDate() + " (" + weekdays[d.getDay()] + ")";
+      const hasData = day.check_in || day.check_out;
+      const status = day.status ? (ATTENDANCE_STATUS_LABEL[day.status] || day.status) : '';
+      const inner = hasData
+        ? '<div style="margin-top:4px;">' + (day.check_in || '--:--') + ' 〜 ' + (day.check_out || '--:--') + '</div><div style="margin-top:2px;color:rgba(255,255,255,0.4);font-size:12px;">' + status + '</div>'
+        : '<div style="margin-top:8px;color:rgba(255,255,255,0.3);font-size:12px;">クリックで追加</div>';
+      cards += '<div onclick="window.editDaySchedule(' + staffId + ", '" + day.date + "', '" + (day.check_in || '') + "', '" + (day.check_out || '') + '\')" style="border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;min-width:120px;cursor:pointer;text-align:center;background:rgba(255,255,255,0.03);"><div style="font-weight:bold;">' + label + '</div>' + inner + '</div>';
+    }
+
+    document.querySelector("div[style*='position:fixed']")?.remove();
+
+    const modal = document.createElement("div");
+    modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;";
+    modal.innerHTML = '<div style="background:#1a1a1a;color:#fff;border-radius:10px;padding:20px;max-width:90%;max-height:90%;overflow:auto;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><h3 style="margin:0;">週間スケジュール</h3><button onclick="this.closest(\'div[style*=fixed]\').remove()" style="padding:4px 12px;border:none;border-radius:4px;cursor:pointer;">閉じる</button></div><div style="display:flex;gap:10px;flex-wrap:wrap;">' + cards + '</div></div>';
+    modal.addEventListener("click", function (e) { if (e.target === modal) modal.remove(); });
+    document.body.appendChild(modal);
+  } catch (error) {
+    alert("エラー: " + error.message);
+  }
+};
+
+// 日付クリック時の編集（時間変更 / 追加）
+window.editDaySchedule = async function (staffId, date, currentIn, currentOut) {
+  const checkIn = prompt(date + " の出勤時間 (HH:MM):", currentIn || "09:00");
+  if (checkIn === null) return;
+  const checkOut = prompt(date + " の退勤時間 (HH:MM):", currentOut || "18:00");
+  if (checkOut === null) return;
+  try {
+    const response = await fetch("/navic/api/attendance/schedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ staffId, date, checkIn, checkOut })
+    });
+    if (!response.ok) throw new Error("保存に失敗しました");
+    await window.showStaffSchedule(staffId);
+    const container = attendanceContentArea();
+    if (container) renderAttendance(container);
+  } catch (error) {
+    alert("エラー: " + error.message);
+  }
+};
 
 // Tag management functionality
 async function renderTags(container) {
