@@ -846,6 +846,21 @@ window.setPickupPriority = async function(staffId, priority) {
     alert("解除エラー: " + error.message);
   }
 };
+async function setPickupPriority(staffId, priority) {
+  try {
+    const response = await fetch(`/navic/api/pickup/settings/${staffId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ priority: priority })
+    });
+    
+    if (!response.ok) throw new Error("解除に失敗しました");
+    await window.debugRenderPickup();
+  } catch (error) {
+    alert("解除エラー: " + error.message);
+  }
+}
+
 async function renderPickup(container) {
   try {
     const settings = await fetchAPI("/pickup/settings");
