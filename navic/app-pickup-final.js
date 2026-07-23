@@ -616,10 +616,10 @@ async function renderAttendance(container) {
     container.innerHTML = `<div style="padding:20px;color:#ff6b6b;"><h3>エラー</h3><p>${error.message}</p></div>`;
   }
 }
-// 7-day calendar view for staff schedule
+// スタッフの出勤スケジュール表示
 window.showStaffSchedule = async function(staffId) {
   try {
-    const data = await fetchAPI(`/attendance/week/${staffId}`);
+    const data = await fetchAPI(`/attendance/staff/${staffId}`);
     if (!data || data.length === 0) {
       alert("出勤履歴がありません");
       return;
@@ -637,6 +637,7 @@ window.showStaffSchedule = async function(staffId) {
     
     let html = `<h2 style="color:white;margin-bottom:20px;">${staffName} の出勤スケジュール</h2>`;
     html += `<button onclick="this.closest(\"div[style]\").remove()" style="background:#ff6b6b;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;float:right;">閉じる</button>`;
+    html += `<div style="clear:both;margin-bottom:20px;"></div>`;
     html += `<table style="width:100%;border-collapse:collapse;">`;
     html += `<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);">`;
     html += `<th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">日付</th>`;
@@ -645,35 +646,24 @@ window.showStaffSchedule = async function(staffId) {
     html += `<th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">状態</th>`;
     html += `</tr></thead><tbody>`;
     
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
-      
-      let checkIn = "--";
-      let checkOut = "--";
-      let statusText = "未出勤";
+    for (let record of data) {
+      let statusText = record.status || "未出勤";
       let statusColor = "#FF9800";
+      if (record.status === "working") { statusText = "出勤中"; statusColor = "#4CAF50"; }
+      else if (record.status === "scheduled") { statusText = "予定"; statusColor = "#2196F3"; }
+      else if (record.status === "off") { statusText = "休み"; statusColor = "#9E9E9E"; }
       
-      const record = data.find(d => d.date === formattedDate);
-      if (record) {
-        checkIn = record.check_in || "--";
-        checkOut = record.check_out || "--";
-        statusText = record.status || "未出勤";
-        statusColor = "#FF9800";
-        if (record.status === "working") { statusText = "出勤中"; statusColor = "#4CAF50"; }
-        else if (record.status === "scheduled") { statusText = "予定"; statusColor = "#2196F3"; }
-        else if (record.status === "off") { statusText = "休み"; statusColor = "#9E9E9E"; }
-      } else {
-        html += `<tr onclick="window.addScheduleDirect(${staffId}, '${formattedDate}')"><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${formattedDate}</td><td colspan="3" style="text-align:center;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">クリックで追加</td></tr>`;
-        continue;
-      }
-      
-      html += `<tr onclick="window.editSchedule(${staffId}, '${formattedDate}')"><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${formattedDate}</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${checkIn}</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${checkOut}</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="background:${statusColor};color:white;padding:2px 10px;border-radius:10px;font-size:12px;">${statusText}</span></td></tr>`;
+      html += `<tr>`;
+      html += `<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${record.date || "--"}</td>`;
+      html += `<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${record.check_in || "--"}</td>`;
+      html += `<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${record.check_out || "--"}</td>`;
+      html += `<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="background:${statusColor};color:white;padding:2px 10px;border-radius:10px;font-size:12px;">${statusText}</span></td>`;
+      html += `</tr>`;
     }
-    
     html += `</tbody></table>`;
+    
+    // 新規スケジュール追加ボタン
+    html += `<div style="margin-top:20px;"><button onclick="window.addSchedule(${staffId})" style="background:#4CAF50;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">+ スケジュール追加</button></div>`;
     
     modalContent.innerHTML = html;
     modal.appendChild(modalContent);
@@ -688,59 +678,13 @@ window.showStaffSchedule = async function(staffId) {
   }
 };
 
-// Helper functions
-window.addScheduleDirect = async function(staffId, date) {
-  const checkIn = prompt("出勤時間を入力 (HH:MM):", "09:00");
-  if (!checkIn) return;
-  const checkOut = prompt("退勤時間を入力 (HH:MM):", "18:00");
-  if (!checkOut) return;
-
-  try {
-    const response = await fetch("/navic/api/schedule", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ staffId, date, checkIn, checkOut })
-    });
-    if (!response.ok) throw new Error("登録に失敗しました");
-    alert("スケジュールを追加しました");
-    loadPage('attendance');
-  } catch (error) {
-    alert("エラー: " + error.message);
-  }
-};
-
-window.editSchedule = async function(staffId, date) {
-  const checkIn = prompt("出勤時間を編集 (HH:MM):", "09:00");
-  if (!checkIn) return;
-  const checkOut = prompt("退勤時間を編集 (HH:MM):", "18:00");
-  if (!checkOut) return;
-
-  try {
-    const response = await fetch("/navic/api/schedule", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ staffId, date, checkIn, checkOut })
-    });
-    if (!response.ok) throw new Error("更新に失敗しました");
-    alert("スケジュールを更新しました");
-    loadPage('attendance');
-  } catch (error) {
-    alert("エラー: " + error.message);
-  }
-};
-
 // スケジュール追加
-
-async function addTag() {
-  const name = prompt("タグ名を入力してください:");
-  if (!name) return;
   const category = prompt("カテゴリを入力してください（例: 体格, 雰囲気）:") || "その他";
   const color = prompt("色を入力してください（例: #ff6b6b）:") || "#00d4aa";
   fetch("/navic/api/tags", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, category, color }) })
     .then(res => res.json())
     .then(() => { alert("タグを追加しました"); loadPage("tags"); })
     .catch(err => alert("エラー: " + err.message));
-}
 
 async function editTag(id) {
   fetch(`/navic/api/tags/${id}`)
@@ -765,39 +709,8 @@ async function deleteTag(id) {
     .catch(err => alert("エラー: " + err.message));
 }
 
-function addTag() {
-  const name = prompt("タグ名を入力してください:");
-  if (!name) return;
-  const category = prompt("カテゴリを入力してください（例: 体格, 雰囲気）:") || "その他";
-  const color = prompt("色を入力してください（例: #ff6b6b）:") || "#00d4aa";
-  fetch("/navic/api/tags", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, category, color }) })
-    .then(res => res.json())
-    .then(() => { alert("タグを追加しました"); loadPage("tags"); })
-    .catch(err => alert("エラー: " + err.message));
-}
 
-function editTag(id) {
-  fetch(`/navic/api/tags/${id}`)
-    .then(res => res.json())
-    .then(data => {
-      const updatedName = prompt("タグ名を編集:", data.name) || "";
-      if (!updatedName) return;
-      const updatedCategory = prompt("カテゴリを編集:", data.category || "その他") || "その他";
-      const updatedColor = prompt("色を編集:", data.color || "#00d4aa") || "#00d4aa";
-      fetch(`/navic/api/tags/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: updatedName, category: updatedCategory, color: updatedColor }) })
-        .then(res => res.json())
-        .then(() => { alert("タグを更新しました"); loadPage("tags"); })
-        .catch(err => alert("エラー: " + err.message));
-    })
-    .catch(err => alert("エラー: " + err.message));
-}
 
-function deleteTag(id) {
-  if (!confirm("このタグを削除してもよろしいですか？")) return;
-  fetch(`/navic/api/tags/${id}`, { method: "DELETE" })
-    .then(() => { alert("タグを削除しました"); loadPage("tags"); })
-    .catch(err => alert("エラー: " + err.message));
-}
 
 async function renderCalls(container) {
   try {
@@ -897,7 +810,6 @@ window.setPickupPriority = async function(staffId, priority) {
     alert("解除エラー: " + error.message);
   }
 };
-
 async function renderPickup(container) {
   try {
     const settings = await fetchAPI("/pickup/settings");
@@ -959,9 +871,16 @@ window.debugRenderPickup = async function() {
 
 // デバッグ用のrenderPickupラッパー
 window.debugRenderPickup = async function() {
+  console.log("debugRenderPickup called");
   const container = document.getElementById("content-area");
+  console.log("container:", container);
   if (container) {
-    await renderPickup(container);
+    try {
+      await renderPickup(container);
+      console.log("renderPickup completed");
+    } catch (e) {
+      console.error("renderPickup error:", e);
+    }
   }
 };
 
@@ -1047,6 +966,7 @@ async function resetPickupOrder() {
     alert("リセットエラー: " + error.message);
   }
 }
+
 
 window.addSchedule = async function(staffId) {
   const date = prompt("日付を入力してください (YYYY-MM-DD):");
