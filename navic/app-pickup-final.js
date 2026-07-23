@@ -518,36 +518,23 @@ window.deleteCustomer = async function (id) {
 async function renderLocations(container) {
   try {
     const data = await fetchAPI("/locations");
-    let html = `<table style="width:100%;border-collapse:collapse;">
-      <thead>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-          <th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">名称</th>
-          <th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">住所</th>
-          <th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">操作</th>
-        </tr>
-      </thead>
-      <tbody>`;
+    let html = `<div style="margin-bottom:20px;"><button onclick="window.showAddLocationModal()" style="background:#4CAF50;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;">+ 新規場所追加</button></div>`;
+    html += `<table style="width:100%;border-collapse:collapse;">`;
+    html += `<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">名称</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">住所</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">操作</th></tr></thead><tbody>`;
     if (data && data.length > 0) {
       for (let l of data) {
-        html += `<tr>
-          <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${l.name}</td>
-          <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${(l.address || '--')}</td>
-          <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">
-            <button onclick="window.editLocation(${l.id})" style="background:rgba(0,212,170,0.15);border:none;color:#00d4aa;padding:4px 12px;border-radius:4px;cursor:pointer;">編集</button>
-            <button onclick="window.deleteLocation(${l.id})" style="background:rgba(220,53,69,0.15);border:none;color:#dc3545;padding:4px 12px;border-radius:4px;cursor:pointer;">削除</button>
-          </td>
-        </tr>`;
+        html += `<tr><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${l.name}</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${(l.address || "--")}</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);"><button onclick="window.editLocation(${l.id})" style="background:rgba(0,212,170,0.15);border:none;color:#00d4aa;padding:4px 12px;border-radius:4px;cursor:pointer;">編集</button> <button onclick="window.deleteLocation(${l.id})" style="background:rgba(220,53,69,0.15);border:none;color:#dc3545;padding:4px 12px;border-radius:4px;cursor:pointer;">削除</button></td></tr>`;
       }
     } else {
       html += `<tr><td colspan="3" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">場所データがありません</td></tr>`;
     }
-    html += `</tbody>
-    </table>`;
+    html += `</tbody></table>`;
     container.innerHTML = html;
   } catch (error) {
     container.innerHTML = `<div style="padding:20px;color:#ff6b6b;"><h3>エラー</h3><p>${error.message}</p></div>`;
   }
 }
+
 window.editLocation = async function(id) {
   try {
     const data = await fetchAPI(`/locations/${id}`);
@@ -578,7 +565,7 @@ window.deleteLocation = async function(id) {
     alert("削除エラー: " + error.message);
   }
 };
-window.showAddLocationModal = function() {
+window.showAddLocationModal = async function() {
   const name = prompt("名前を入力してください:");
   if (!name) return;
   const address = prompt("住所を入力してください:");
@@ -604,40 +591,94 @@ window.showAddLocationModal = function() {
 
 async function renderAttendance(container) {
   try {
-    const data = await fetchAPI("/attendance");
-    let html = '<table style="width:100%;border-collapse:collapse;"><thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">スタッフ</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">日付</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">出勤</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">退勤</th></tr></thead><tbody>';
+    const data = await fetchAPI("/attendance/today");
+    let html = `<div style="margin-bottom:20px;"><h3 style="color:rgba(255,255,255,0.8);">本日の出勤</h3></div>`;
+    html += `<table style="width:100%;border-collapse:collapse;"><thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">スタッフ</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">出勤</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">退勤</th><th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">状態</th></tr></thead><tbody>`;
     if (data && data.length > 0) {
       for (let a of data) {
-        html += '<tr><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">' + a.staff_name + '</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">' + a.date + '</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">' + (a.check_in || '--') + '</td><td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">' + (a.check_out || '--') + '</td></tr>';
+        const statusBadge = a.status === "working" ? `<span style="background:#4CAF50;color:white;padding:2px 10px;border-radius:10px;font-size:12px;">出勤中</span>` :
+          a.status === "scheduled" ? `<span style="background:#2196F3;color:white;padding:2px 10px;border-radius:10px;font-size:12px;">予定</span>` :
+          a.status === "off" ? `<span style="background:#9E9E9E;color:white;padding:2px 10px;border-radius:10px;font-size:12px;">休み</span>` :
+          `<span style="background:#FF9800;color:white;padding:2px 10px;border-radius:10px;font-size:12px;">未出勤</span>`;
+        html += `<tr style="cursor:pointer;" onclick="showStaffSchedule(${a.id})">
+          <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);color:#00d4aa;">${a.staff_name}</td>
+          <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${a.check_in || "--"}</td>
+          <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${a.check_out || "--"}</td>
+          <td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${statusBadge}</td>
+        </tr>`;
       }
     } else {
-      html += '<tr><td colspan="4" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">出勤データがありません</td></tr>';
+      html += `<tr><td colspan="4" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">本日の出勤データがありません</td></tr>`;
     }
-    html += '</tbody></table>';
-    container.innerHTML = html;
-  } catch (error) {
-    container.innerHTML = '<div style="padding:20px;color:#ff6b6b;"><h3>エラー</h3><p>' + error.message + '</p></div>';
-  }
-}
-
-// Tag management functionality
-async function renderTags(container) {
-  try {
-    const data = await fetchAPI("/tags");
-    let html = `<div style="margin-bottom:16px;"><button onclick="addTag()" style="background:#00d4aa;border:none;color:#0a0a0f;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600;">+ 新規タグ追加</button></div><div style="display:flex;flex-wrap:wrap;gap:8px;">`;
-    if (data && data.length > 0) {
-      for (let tag of data) {
-        html += `<div style="display:inline-flex;align-items:center;gap:6px;background:${tag.color}22;color:${tag.color};border:1px solid ${tag.color}44;border-radius:12px;padding:4px 12px;font-size:12px;"><span>${tag.name}</span><span style="font-size:10px;color:rgba(255,255,255,0.3);">${tag.category || ""}</span><button onclick="editTag(${tag.id})" style="background:rgba(0,212,170,0.15);border:none;color:#00d4aa;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:10px;">✏️</button><button onclick="deleteTag(${tag.id})" style="background:rgba(220,53,69,0.15);border:none;color:#dc3545;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:10px;">🗑️</button></div>`;
-      }
-    } else {
-      html += `<div style="color:rgba(255,255,255,0.3);">タグデータがありません</div>`;
-    }
-    html += `</div>`;
+    html += `</tbody></table>`;
     container.innerHTML = html;
   } catch (error) {
     container.innerHTML = `<div style="padding:20px;color:#ff6b6b;"><h3>エラー</h3><p>${error.message}</p></div>`;
   }
 }
+// スタッフの出勤スケジュール表示
+window.showStaffSchedule = async function(staffId) {
+  try {
+    const data = await fetchAPI(`/attendance/staff/${staffId}`);
+    if (!data || data.length === 0) {
+      alert("出勤履歴がありません");
+      return;
+    }
+    
+    // スタッフ名を取得
+    const staffName = data[0]?.staff_name || "スタッフ";
+    
+    // モーダルを作成
+    const modal = document.createElement("div");
+    modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:9999;";
+    
+    const modalContent = document.createElement("div");
+    modalContent.style.cssText = "background:#1a1a2e;padding:30px;border-radius:12px;max-width:700px;width:90%;max-height:80vh;overflow-y:auto;";
+    
+    let html = `<h2 style="color:white;margin-bottom:20px;">${staffName} の出勤スケジュール</h2>`;
+    html += `<button onclick="this.closest(\"div[style]\").remove()" style="background:#ff6b6b;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;float:right;">閉じる</button>`;
+    html += `<div style="clear:both;margin-bottom:20px;"></div>`;
+    html += `<table style="width:100%;border-collapse:collapse;">`;
+    html += `<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);">`;
+    html += `<th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">日付</th>`;
+    html += `<th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">出勤</th>`;
+    html += `<th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">退勤</th>`;
+    html += `<th style="text-align:left;padding:12px 16px;color:rgba(255,255,255,0.4);">状態</th>`;
+    html += `</tr></thead><tbody>`;
+    
+    for (let record of data) {
+      let statusText = record.status || "未出勤";
+      let statusColor = "#FF9800";
+      if (record.status === "working") { statusText = "出勤中"; statusColor = "#4CAF50"; }
+      else if (record.status === "scheduled") { statusText = "予定"; statusColor = "#2196F3"; }
+      else if (record.status === "off") { statusText = "休み"; statusColor = "#9E9E9E"; }
+      
+      html += `<tr>`;
+      html += `<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${record.date || "--"}</td>`;
+      html += `<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${record.check_in || "--"}</td>`;
+      html += `<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);">${record.check_out || "--"}</td>`;
+      html += `<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="background:${statusColor};color:white;padding:2px 10px;border-radius:10px;font-size:12px;">${statusText}</span></td>`;
+      html += `</tr>`;
+    }
+    html += `</tbody></table>`;
+    
+    // 新規スケジュール追加ボタン
+    html += `<div style="margin-top:20px;"><button onclick="window.addSchedule(${staffId})" style="background:#4CAF50;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">+ スケジュール追加</button></div>`;
+    
+    modalContent.innerHTML = html;
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    // クリックで閉じる
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.remove();
+    });
+  } catch (error) {
+    alert("エラー: " + error.message);
+  }
+};
+
+// スケジュール追加
 
 async function addTag() {
   const name = prompt("タグ名を入力してください:");
